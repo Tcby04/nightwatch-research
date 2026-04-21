@@ -12,8 +12,9 @@ from playwright.sync_api import sync_playwright
 
 app = Flask(__name__)
 
-OPENROUTER_API_KEY = "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"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -43,19 +44,20 @@ def list_pending_queries():
     return pending
 
 
-def call_openrouter(prompt: str, model: str = "openai/gpt-4o") -> str:
+def call_openrouter(prompt: str, model: str = GROQ_MODEL) -> str:
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://never-sleep.ai",
-        "X-Title": "Never Sleep - NightWatch",
     }
     payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are NightWatch, an elite AI research analyst. Your reports are specific, evidence-based, and written for busy operators. No corporate fluff."},
+            {"role": "user", "content": prompt}
+        ],
         "max_tokens": 1024,
     }
-    resp = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60)
+    resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
 
